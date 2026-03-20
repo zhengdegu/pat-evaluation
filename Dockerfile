@@ -39,7 +39,7 @@ RUN wget -q https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-6
 
 # ---- ES IK 中文分词插件 ----
 RUN curl -fSL -o /tmp/ik.zip \
-    "https://github.com/medcl/elasticsearch-analysis-ik/releases/download/v6.3.2/elasticsearch-analysis-ik-6.3.2.zip" \
+    "https://release.infinilabs.com/analysis-ik/stable/elasticsearch-analysis-ik-6.3.2.zip" \
     && mkdir -p /usr/share/elasticsearch/plugins/analysis-ik \
     && unzip -q /tmp/ik.zip -d /usr/share/elasticsearch/plugins/analysis-ik \
     && rm /tmp/ik.zip \
@@ -78,8 +78,6 @@ COPY docker/supervisord.conf /etc/supervisord.conf
 ENV ESURL=http://127.0.0.1:9200
 ENV REDIS_HOST=127.0.0.1
 ENV REDIS_PORT=6379
-ENV REDIS_PASSWORD=salt668
-ENV ES_JAVA_OPTS="-Xms512m -Xmx512m"
 ENV JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64
 
 # ---- 数据卷 ----
