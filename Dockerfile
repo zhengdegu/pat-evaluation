@@ -38,8 +38,8 @@ RUN wget -q https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-6
     && chown -R elasticsearch:elasticsearch /usr/share/elasticsearch
 
 # ---- ES IK 中文分词插件 ----
-RUN wget -q -O /tmp/ik.zip \
-    https://github.com/medcl/elasticsearch-analysis-ik/releases/download/v6.3.2/elasticsearch-analysis-ik-6.3.2.zip \
+RUN curl -fSL -o /tmp/ik.zip \
+    "https://github.com/medcl/elasticsearch-analysis-ik/releases/download/v6.3.2/elasticsearch-analysis-ik-6.3.2.zip" \
     && mkdir -p /usr/share/elasticsearch/plugins/analysis-ik \
     && unzip -q /tmp/ik.zip -d /usr/share/elasticsearch/plugins/analysis-ik \
     && rm /tmp/ik.zip \
