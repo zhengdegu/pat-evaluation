@@ -8,7 +8,7 @@ FROM node:16-alpine AS frontend-build
 
 WORKDIR /build
 COPY pat-evaluation-frontend/package.json pat-evaluation-frontend/yarn.lock ./
-RUN yarn install --frozen-lockfile --network-timeout 120000
+RUN yarn install --network-timeout 120000
 
 COPY pat-evaluation-frontend/ .
 ENV NODE_OPTIONS=--openssl-legacy-provider
