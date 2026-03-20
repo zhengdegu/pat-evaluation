@@ -25,7 +25,7 @@ ENV LANG=C.UTF-8
 RUN apt-get update && apt-get install -y --no-install-recommends \
     openjdk-11-jre-headless \
     python3 python3-pip python3-venv \
-    nginx redis-server supervisor curl wget ca-certificates \
+    nginx redis-server supervisor curl wget ca-certificates unzip \
     && rm -rf /var/lib/apt/lists/*
 
 # ---- 安装 Elasticsearch 6.3.2 ----
@@ -38,10 +38,12 @@ RUN wget -q https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-6
     && chown -R elasticsearch:elasticsearch /usr/share/elasticsearch
 
 # ---- ES IK 中文分词插件 ----
-USER elasticsearch
-RUN /usr/share/elasticsearch/bin/elasticsearch-plugin install \
-    https://github.com/medcl/elasticsearch-analysis-ik/releases/download/v6.3.2/elasticsearch-analysis-ik-6.3.2.zip
-USER root
+RUN wget -q -O /tmp/ik.zip \
+    https://github.com/medcl/elasticsearch-analysis-ik/releases/download/v6.3.2/elasticsearch-analysis-ik-6.3.2.zip \
+    && mkdir -p /usr/share/elasticsearch/plugins/analysis-ik \
+    && unzip -q /tmp/ik.zip -d /usr/share/elasticsearch/plugins/analysis-ik \
+    && rm /tmp/ik.zip \
+    && chown -R elasticsearch:elasticsearch /usr/share/elasticsearch/plugins
 
 # ---- ES 配置 ----
 RUN echo "discovery.type: single-node" >> /usr/share/elasticsearch/config/elasticsearch.yml && \
