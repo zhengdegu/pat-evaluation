@@ -1,0 +1,32 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+venv/
+.env
+
+# Node
+node_modules/
+dist/
+
+# Logs
+*.log
+nohup.out
+
+# Temp files
+~$*
+*.swp
+*.swo
+
+# Docker volumes
+es-data/
+redis-data/

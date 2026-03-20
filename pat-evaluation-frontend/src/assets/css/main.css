@@ -1,0 +1,282 @@
+/* ============================================
+   生物医药领域专利价值评价系统 — 全局样式
+   设计风格：科研感、极简、专业化
+   色调：白色、浅灰、深蓝冷静色系
+   ============================================ */
+
+:root {
+  /* 主色系 */
+  --color-primary: #1a3a5c;
+  --color-primary-light: #2c5f8a;
+  --color-primary-lighter: #3d7bb8;
+  --color-accent: #0066cc;
+  --color-accent-light: #e8f2fc;
+
+  /* 中性色 */
+  --color-bg: #f5f7fa;
+  --color-bg-white: #ffffff;
+  --color-bg-card: #ffffff;
+  --color-border: #e4e8ee;
+  --color-border-light: #edf0f5;
+  --color-divider: #e8ecf1;
+
+  /* 文字色 */
+  --color-text-primary: #1a2332;
+  --color-text-secondary: #5a6577;
+  --color-text-tertiary: #8c95a4;
+  --color-text-placeholder: #b0b8c5;
+
+  /* 功能色 */
+  --color-success: #2d8a56;
+  --color-warning: #c5880c;
+  --color-danger: #c0392b;
+  --color-info: #5a6577;
+
+  /* 间距 */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+  --spacing-2xl: 48px;
+
+  /* 圆角 */
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+
+  /* 阴影 */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.1);
+
+  /* 字体 */
+  --font-sans: 'Inter', 'Noto Sans SC', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-mono: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--color-text-primary);
+  background-color: var(--color-bg);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  min-width: 1024px;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-sans);
+  font-weight: 600;
+  color: var(--color-text-primary);
+  line-height: 1.4;
+}
+
+h1 { font-size: 24px; }
+h2 { font-size: 20px; }
+h3 { font-size: 16px; }
+h4 { font-size: 14px; }
+
+a {
+  color: var(--color-accent);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+a:hover {
+  color: var(--color-primary-lighter);
+}
+
+/* ---- 布局容器 ---- */
+.app-layout {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.page-container {
+  max-width: 1200px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 0 var(--spacing-lg);
+}
+
+/* ---- 卡片 ---- */
+.card {
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-lg);
+  margin-bottom: var(--spacing-lg);
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow 0.2s;
+}
+.card:hover {
+  box-shadow: var(--shadow-md);
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: var(--spacing-md);
+  padding-bottom: var(--spacing-md);
+  border-bottom: 1px solid var(--color-border-light);
+}
+
+.card-header__indicator {
+  width: 3px;
+  height: 18px;
+  background: var(--color-primary);
+  border-radius: 2px;
+  margin-right: var(--spacing-sm);
+  flex-shrink: 0;
+}
+
+.card-header__title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  letter-spacing: 0.02em;
+}
+
+/* ---- Element UI 覆盖 ---- */
+
+/* 表格 */
+.el-table {
+  font-family: var(--font-sans);
+  font-size: 13px;
+  color: var(--color-text-primary);
+}
+.el-table th {
+  background-color: #f8f9fb !important;
+  color: var(--color-text-secondary);
+  font-weight: 600;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 2px solid var(--color-border) !important;
+}
+.el-table td {
+  border-bottom: 1px solid var(--color-border-light) !important;
+  padding: 12px 0;
+}
+.el-table--border {
+  border: 1px solid var(--color-border) !important;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+.el-table--border th, .el-table--border td {
+  border-right: 1px solid var(--color-border-light) !important;
+}
+.el-table__row:hover > td {
+  background-color: var(--color-accent-light) !important;
+}
+
+/* 按钮 */
+.el-button--primary {
+  background-color: var(--color-primary) !important;
+  border-color: var(--color-primary) !important;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  border-radius: var(--radius-md) !important;
+}
+.el-button--primary:hover {
+  background-color: var(--color-primary-light) !important;
+  border-color: var(--color-primary-light) !important;
+}
+.el-button--text {
+  color: var(--color-accent) !important;
+  font-weight: 500;
+}
+
+/* 输入框 */
+.el-input__inner {
+  border-radius: var(--radius-md) !important;
+  border-color: var(--color-border) !important;
+  font-family: var(--font-sans);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.el-input__inner:focus {
+  border-color: var(--color-accent) !important;
+  box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1) !important;
+}
+
+/* 菜单 */
+.el-menu {
+  font-family: var(--font-sans);
+}
+.el-menu--horizontal > .el-menu-item {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  letter-spacing: 0.02em;
+  transition: color 0.2s;
+}
+.el-menu--horizontal > .el-menu-item.is-active {
+  color: var(--color-primary) !important;
+  border-bottom-color: var(--color-primary) !important;
+}
+.el-menu--horizontal > .el-menu-item:hover {
+  color: var(--color-primary) !important;
+}
+
+/* 分页 */
+.el-pagination {
+  font-family: var(--font-sans);
+}
+.el-pagination .btn-prev, .el-pagination .btn-next,
+.el-pagination .el-pager li {
+  border-radius: var(--radius-sm) !important;
+}
+.el-pager li.active {
+  background-color: var(--color-primary) !important;
+}
+
+/* 进度条 */
+.el-progress-bar__outer {
+  border-radius: var(--radius-sm) !important;
+  background-color: var(--color-bg) !important;
+}
+.el-progress-bar__inner {
+  border-radius: var(--radius-sm) !important;
+  background-color: var(--color-primary) !important;
+}
+
+/* 对话框 */
+.el-dialog {
+  border-radius: var(--radius-lg) !important;
+}
+.el-dialog__header {
+  border-bottom: 1px solid var(--color-border-light);
+  padding: var(--spacing-md) var(--spacing-lg) !important;
+}
+.el-dialog__title {
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+/* ---- 工具类 ---- */
+.text-center { text-align: center; }
+.text-right { text-align: right; }
+.text-secondary { color: var(--color-text-secondary); }
+.text-tertiary { color: var(--color-text-tertiary); }
+.text-mono { font-family: var(--font-mono); }
+.mt-sm { margin-top: var(--spacing-sm); }
+.mt-md { margin-top: var(--spacing-md); }
+.mt-lg { margin-top: var(--spacing-lg); }
+.mb-md { margin-bottom: var(--spacing-md); }
+.mb-lg { margin-bottom: var(--spacing-lg); }
+
+/* ---- 过渡动画 ---- */
+.fade-enter-active, .fade-leave-active {
+  transition: opacity 0.25s ease;
+}
+.fade-enter, .fade-leave-to {
+  opacity: 0;
+}

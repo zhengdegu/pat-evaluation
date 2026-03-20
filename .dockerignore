@@ -1,0 +1,14 @@
+**/node_modules
+**/dist
+**/__pycache__
+**/*.pyc
+**/.DS_Store
+**/.idea
+**/.git
+**/.vscode
+**/nohup.out
+**/~$*
+pat-evaluation-backend/test/
+pat-evaluation-backend/scripts/
+pat-evaluation-frontend/pdf/
+docker-compose.yml

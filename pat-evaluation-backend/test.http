@@ -1,0 +1,81 @@
+### 获取专利的基本信息
+GET http://127.0.0.1:5000/api/basicinfo/get_patent_info?patid=200310119410
+
+###
+GET http://gitlab.intelipev.com:9090/api/basicinfo/get_patent_info?patid=CN200310119410
+
+### 模糊搜索
+GET http://127.0.0.1:5000/api/basicinfo/fuzz_searh?keywords=CN200310119410
+
+###
+
+GET http://127.0.0.1:5000/api/marketfactor/applytrending?patid=CN200310119410
+
+### Invalid argument
+GET http://127.0.0.1:5000/api/marketfactor/applytrending
+
+### patent not found
+GET http://127.0.0.1:5000/api/marketfactor/applytrending?patid=CN200310119410
+
+###
+
+GET http://127.0.0.1:5000/api/marketfactor/tradetrending?patid=CN200310119410
+
+
+###
+
+GET http://127.0.0.1:5000/api/marketfactor/similarpatents?patid=CN200310119410&start=0&size=5
+
+###
+
+GET http://127.0.0.1:5000/api/marketfactor/estimateprice?patid=CN200310119410
+
+
+###
+
+GET http://127.0.0.1:5000/api/combinationfactor/distribution?patid=CN200310119410
+
+###
+
+GET http://127.0.0.1:5000/api/combinationfactor/combinationanalysis?patid=CN200310119410
+
+###
+
+GET http://127.0.0.1:5000/api/combinationfactor/dependencies?patid=CN200310119410
+
+
+###
+
+GET http://127.0.0.1:5000/api/lawfactor/validityperiod?patid=CN200310119410
+
+
+###
+
+GET http://127.0.0.1:5000/api/lawfactor/multipleapplications?patid=CN200310119410
+
+
+###
+
+GET http://127.0.0.1:5000/api/lawfactor/lawsuits?patid=CN200310119410
+
+###
+
+
+GET http://127.0.0.1:5000/api/techfactor/applicability?patid=CN200310119410
+
+###
+
+
+GET http://127.0.0.1:5000/api/techfactor/thesisbyapplicant?patid=CN200310119410
+
+###
+
+GET http://127.0.0.1:5000/api/techfactor/similarthesis?patid=CN200310119410
+
+### 评估部分
+
+GET http://127.0.0.1:5000/api/evaluation/start?patid=CN200310119410&reload=1
+
+###
+
+GET http://gitlab.intelipev.com:9090/api/evaluation/start?patid=CN200310119410&reload=0
