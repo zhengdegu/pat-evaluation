@@ -16,20 +16,38 @@ RUN yarn build
 
 
 # ---- Stage 2: All-in-One 运行镜像 ----
-FROM docker.elastic.co/elasticsearch/elasticsearch:6.3.2
+FROM ubuntu:20.04
 
-USER root
+ENV DEBIAN_FRONTEND=noninteractive
+ENV LANG=C.UTF-8
 
 # ---- 系统依赖 ----
-RUN yum install -y epel-release && \
-    yum install -y python3 python3-pip nginx redis supervisor curl && \
-    yum clean all
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    openjdk-11-jre-headless \
+    python3 python3-pip python3-venv \
+    nginx redis-server supervisor curl wget ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+# ---- 安装 Elasticsearch 6.3.2 ----
+RUN wget -q https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-6.3.2.tar.gz \
+    && tar -xzf elasticsearch-6.3.2.tar.gz -C /usr/share/ \
+    && mv /usr/share/elasticsearch-6.3.2 /usr/share/elasticsearch \
+    && rm elasticsearch-6.3.2.tar.gz \
+    && useradd -r -s /bin/false elasticsearch \
+    && mkdir -p /usr/share/elasticsearch/data /usr/share/elasticsearch/logs \
+    && chown -R elasticsearch:elasticsearch /usr/share/elasticsearch
 
 # ---- ES IK 中文分词插件 ----
 USER elasticsearch
 RUN /usr/share/elasticsearch/bin/elasticsearch-plugin install \
     https://github.com/medcl/elasticsearch-analysis-ik/releases/download/v6.3.2/elasticsearch-analysis-ik-6.3.2.zip
 USER root
+
+# ---- ES 配置 ----
+RUN echo "discovery.type: single-node" >> /usr/share/elasticsearch/config/elasticsearch.yml && \
+    echo "xpack.security.enabled: false" >> /usr/share/elasticsearch/config/elasticsearch.yml && \
+    echo "network.host: 127.0.0.1" >> /usr/share/elasticsearch/config/elasticsearch.yml && \
+    echo "http.port: 9200" >> /usr/share/elasticsearch/config/elasticsearch.yml
 
 # ---- Python 后端 ----
 WORKDIR /app/backend
@@ -42,23 +60,17 @@ COPY pat-evaluation-backend/ .
 COPY --from=frontend-build /build/dist /usr/share/nginx/html
 
 # ---- Nginx 配置 ----
+RUN rm -f /etc/nginx/sites-enabled/default
 COPY docker/nginx-aio.conf /etc/nginx/conf.d/default.conf
-# 清除默认 nginx 配置避免冲突
-RUN rm -f /etc/nginx/nginx.conf
 COPY docker/nginx-main.conf /etc/nginx/nginx.conf
 
-# ---- ES 索引初始化脚本 ----
+# ---- 初始化脚本 & 启动脚本 ----
 COPY docker/init-es.sh /app/init-es.sh
-RUN chmod +x /app/init-es.sh
+COPY docker/start.sh /app/start.sh
+RUN chmod +x /app/init-es.sh /app/start.sh
 
 # ---- Supervisord 配置 ----
 COPY docker/supervisord.conf /etc/supervisord.conf
-
-# ---- ES 配置 ----
-RUN echo "discovery.type: single-node" >> /usr/share/elasticsearch/config/elasticsearch.yml && \
-    echo "xpack.security.enabled: false" >> /usr/share/elasticsearch/config/elasticsearch.yml && \
-    echo "network.host: 127.0.0.1" >> /usr/share/elasticsearch/config/elasticsearch.yml && \
-    echo "http.port: 9200" >> /usr/share/elasticsearch/config/elasticsearch.yml
 
 # ---- 环境变量 ----
 ENV ESURL=http://127.0.0.1:9200
@@ -66,6 +78,7 @@ ENV REDIS_HOST=127.0.0.1
 ENV REDIS_PORT=6379
 ENV REDIS_PASSWORD=salt668
 ENV ES_JAVA_OPTS="-Xms512m -Xmx512m"
+ENV JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64
 
 # ---- 数据卷 ----
 VOLUME ["/usr/share/elasticsearch/data", "/data/redis"]
@@ -74,4 +87,4 @@ VOLUME ["/usr/share/elasticsearch/data", "/data/redis"]
 EXPOSE 80
 
 # ---- 启动 ----
-CMD ["/usr/bin/supervisord", "-c", "/etc/supervisord.conf"]
+CMD ["/app/start.sh"]
