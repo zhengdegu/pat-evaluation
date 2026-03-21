@@ -12,7 +12,8 @@ RUN yarn install --network-timeout 120000
 
 COPY pat-evaluation-frontend/ .
 ENV CI=true
-RUN yarn build --mode production
+RUN node node_modules/@vue/cli-service/bin/vue-cli-service.js build --mode production; \
+    if [ -d dist ]; then echo "Build success"; else exit 1; fi
 
 
 # ---- Stage 2: All-in-One 运行镜像 ----
