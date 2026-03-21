@@ -8,7 +8,7 @@
     </main>
     <footer v-if="showNav" class="app-footer">
       <div class="page-container">
-        <span class="app-footer__text">© 2025 生物医药领域专利价值评价系统 · Biomedical Patent Valuation System</span>
+        <span class="app-footer__text">© 2025 生物医药领域专利价值评价系统 · Biomedical Patent Valuation Platform</span>
       </div>
     </footer>
   </div>
@@ -39,17 +39,17 @@ export default {
 <style scoped>
 .app-main {
   flex: 1;
-  padding: var(--spacing-xl) 0;
+  padding: var(--space-xl) 0;
 }
 .app-footer {
-  background: var(--color-bg-white);
-  border-top: 1px solid var(--color-border);
-  padding: var(--spacing-md) 0;
+  background: var(--md-surface-container-lowest);
+  border-top: 1px solid var(--md-outline-variant);
+  padding: var(--space-md) 0;
   text-align: center;
 }
 .app-footer__text {
   font-size: 12px;
-  color: var(--color-text-tertiary);
-  letter-spacing: 0.03em;
+  color: var(--md-outline);
+  letter-spacing: 0.02em;
 }
 </style>

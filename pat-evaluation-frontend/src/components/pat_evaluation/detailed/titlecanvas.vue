@@ -4,22 +4,14 @@
       <span class="card-header__indicator"></span>
       <span class="card-header__title">{{ title }}</span>
     </div>
-    <div class="card-body">
-      <slot></slot>
-    </div>
+    <div class="card-body"><slot></slot></div>
   </div>
 </template>
 
 <script>
-export default {
-  props: {
-    title: String
-  }
-}
+export default { props: { title: String } }
 </script>
 
 <style scoped>
-.card-body {
-  padding: var(--spacing-sm) 0 0;
-}
+.card-body { padding: var(--space-sm) 0 0; }
 </style>
