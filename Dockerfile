@@ -60,6 +60,9 @@ RUN pip3 install --no-cache-dir --upgrade pip && \
 
 COPY pat-evaluation-backend/ .
 
+# ---- 数据导入脚本 ----
+COPY docker/import_excel.py /app/import_excel.py
+
 # ---- 前端静态文件 ----
 COPY --from=frontend-build /build/dist /usr/share/nginx/html
 
