@@ -11,7 +11,8 @@ COPY pat-evaluation-frontend/package.json pat-evaluation-frontend/yarn.lock ./
 RUN yarn install --network-timeout 120000
 
 COPY pat-evaluation-frontend/ .
-RUN yarn build
+ENV CI=true
+RUN yarn build --mode production
 
 
 # ---- Stage 2: All-in-One 运行镜像 ----
@@ -53,7 +54,8 @@ RUN echo "discovery.type: single-node" >> /usr/share/elasticsearch/config/elasti
 # ---- Python 后端 ----
 WORKDIR /app/backend
 COPY pat-evaluation-backend/requirements.txt .
-RUN pip3 install --no-cache-dir -r requirements.txt
+RUN pip3 install --no-cache-dir --upgrade pip && \
+    pip3 install --no-cache-dir -r requirements.txt
 
 COPY pat-evaluation-backend/ .
 
