@@ -3,7 +3,7 @@ import re
 from flask import Blueprint, jsonify, current_app as app
 from .utils import get_patent, parse_args, create_es_search, run_es_query
 from elasticsearch_dsl import Q
-from .txt_similarity import caculate_similarity
+from .txt_similarity import caculate_similarity, _extract_keywords
 
 tech_bp = Blueprint('techfactor', __name__, url_prefix='/api/techfactor')
 
@@ -121,7 +121,7 @@ def thesisbyapplicant():
 
 @tech_bp.route('/similarthesis')
 def similarthesis():
-    """其他相关论文 — 基于专利内容语义搜索"""
+    """其他相关论文 — 从专利摘要提取关键词搜索"""
     args, _ = parse_args(['patid'])
     patent = get_patent(args['patid'])
     if patent is None:
@@ -132,26 +132,38 @@ def similarthesis():
     patent_name = source.get('专利名', '')
     patid = args['patid']
 
-    queries = []
-
-    # 用专利摘要做语义搜索（权重高）
+    # 从专利摘要提取 top 10 关键词
+    keywords = {}
     if patent_abstract:
-        queries.append(Q('multi_match', query=patent_abstract[:300],
-                         fields=['论文名称^2', '摘要^3'], type='most_fields'))
+        keywords = _extract_keywords(patent_abstract, topK=10)
+    if not keywords and patent_name:
+        keywords = _extract_keywords(patent_name, topK=10)
 
-    # 用专利名匹配（补充）
-    if patent_name:
-        queries.append(Q('match', **{'论文名称': {'query': patent_name, 'boost': 2}}))
-
-    if not queries:
+    if not keywords:
         return jsonify(hits={'total': 0, 'hits': []}, error_code='no_data')
+
+    # 用关键词构建查询，每个关键词按 TF-IDF 权重 boost
+    keyword_queries = []
+    for word, weight in sorted(keywords.items(), key=lambda x: x[1], reverse=True):
+        boost = max(1.0, weight * 5)
+        keyword_queries.append(Q('multi_match', query=word,
+                                  fields=['论文名称', '摘要'],
+                                  boost=boost))
 
     # 排除已关联到该专利的论文
     s = create_es_search('paper').query(
-        Q('bool', should=queries, minimum_should_match=1,
+        Q('bool', should=keyword_queries, minimum_should_match=2,
           must_not=[Q('term', **{'关联专利号': patid})])
     )
     res = run_es_query(s)
+
+    if res is None or _get_hit_count(res) == 0:
+        # 降级：放宽到只需匹配 1 个关键词
+        s = create_es_search('paper').query(
+            Q('bool', should=keyword_queries, minimum_should_match=1,
+              must_not=[Q('term', **{'关联专利号': patid})])
+        )
+        res = run_es_query(s)
 
     if res is None:
         return jsonify(hits={'total': 0, 'hits': []}, error_code='no_results')
