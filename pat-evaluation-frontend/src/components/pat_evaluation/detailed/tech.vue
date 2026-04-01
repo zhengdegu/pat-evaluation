@@ -44,10 +44,19 @@ export default {
     if (patentId !== null) {
       axios.get(APPLICABILITY_URL + "?patid=" + patentId).then((r) => { this.applicabilities = r.data.ipc; }).catch((e) => console.log(e));
       axios.get(THESISBYAPPLICANT_URL + "?patid=" + patentId).then((r) => {
-        this.authorThesises = r.data.thesis.hits.map(i => ({ title: i._source['论文名称'], referenceNum: i._source['被引用次数'], source: i._source['来源'].join(', '), similarity: i._source['相似度'] }));
+        this.authorThesises = (r.data.thesis.hits || []).map(i => {
+          let s = i._source || {};
+          let src = s['期刊'] || s['来源'] || '';
+          return { title: s['论文名称'] || '', referenceNum: s['被引用次数'] || 0, source: Array.isArray(src) ? src.join(', ') : String(src), similarity: s['相似度'] || '0.00%' };
+        });
       }).catch((e) => console.log(e));
       axios.get(SIMILARTHESIS_URL + "?patid=" + patentId).then((r) => {
-        this.otherThesises = r.data.hits.map(i => ({ author: i._source['作者'].join('，'), title: i._source['论文名称'], referenceNum: i._source['被引用次数'], source: i._source['来源'].join(', '), similarity: i._source['相似度'] }));
+        this.otherThesises = (r.data.hits || []).map(i => {
+          let s = i._source || {};
+          let auth = s['作者'] || '';
+          let src = s['期刊'] || s['来源'] || '';
+          return { author: Array.isArray(auth) ? auth.join('，') : String(auth), title: s['论文名称'] || '', referenceNum: s['被引用次数'] || 0, source: Array.isArray(src) ? src.join(', ') : String(src), similarity: s['相似度'] || '0.00%' };
+        });
       }).catch((e) => console.log(e));
     }
   }
