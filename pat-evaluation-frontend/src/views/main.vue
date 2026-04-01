@@ -94,12 +94,6 @@ export default {
         else if (Array.isArray(value)) value = value.join('，');
         pData.push({ key: key, value: value });
       }
-      // 转化收益智能展示
-      if (d.has_traded) {
-        pData.push({ key: '实际转化收益', value: d['转化收益（万元）'] + ' 万元' });
-      } else {
-        pData.push({ key: '转化收益', value: '暂无公开交易记录' });
-      }
       // 评估价格区间
       if (d.estimated_price && Array.isArray(d.estimated_price) && d.estimated_price.length >= 2) {
         pData.push({ key: '评估价格区间', value: parseFloat(d.estimated_price[0]).toFixed(2) + ' ~ ' + parseFloat(d.estimated_price[1]).toFixed(2) + ' 万元（基于模型估算）' });
