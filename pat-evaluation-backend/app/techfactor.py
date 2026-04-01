@@ -121,7 +121,7 @@ def thesisbyapplicant():
 
 @tech_bp.route('/similarthesis')
 def similarthesis():
-    """其他相关论文 — 从专利摘要提取关键词搜索"""
+    """其他相关论文 — 发明人 + 摘要关键词组合搜索"""
     args, _ = parse_args(['patid'])
     patent = get_patent(args['patid'])
     if patent is None:
@@ -131,18 +131,16 @@ def similarthesis():
     patent_abstract = source.get('摘要', '')
     patent_name = source.get('专利名', '')
     patid = args['patid']
+    inventors = source.get('发明人', '')
 
-    # 从专利摘要提取 top 10 关键词
+    # 提取摘要关键词
     keywords = {}
     if patent_abstract:
         keywords = _extract_keywords(patent_abstract, topK=10)
     if not keywords and patent_name:
         keywords = _extract_keywords(patent_name, topK=10)
 
-    if not keywords:
-        return jsonify(hits={'total': 0, 'hits': []}, error_code='no_data')
-
-    # 用关键词构建查询，每个关键词按 TF-IDF 权重 boost
+    # 构建关键词查询
     keyword_queries = []
     for word, weight in sorted(keywords.items(), key=lambda x: x[1], reverse=True):
         boost = max(1.0, weight * 5)
@@ -150,17 +148,28 @@ def similarthesis():
                                   fields=['论文名称', '摘要'],
                                   boost=boost))
 
-    # 排除已关联到该专利的论文
+    # 构建发明人查询
+    author_queries = []
+    if inventors:
+        author_list = [a.strip() for a in re.split(r'[;；,，]+', inventors) if len(a.strip()) >= 2]
+        for a in author_list:
+            author_queries.append(Q('match_phrase', **{'作者': a}))
+
+    if not keyword_queries and not author_queries:
+        return jsonify(hits={'total': 0, 'hits': []}, error_code='no_data')
+
+    # 组合查询：发明人 + 关键词都作为 should，要求至少匹配2个条件
+    all_queries = author_queries + keyword_queries
     s = create_es_search('paper').query(
-        Q('bool', should=keyword_queries, minimum_should_match=2,
+        Q('bool', should=all_queries, minimum_should_match=2,
           must_not=[Q('term', **{'关联专利号': patid})])
     )
     res = run_es_query(s)
 
-    if res is None or _get_hit_count(res) == 0:
-        # 降级：放宽到只需匹配 1 个关键词
+    # 降级：放宽到1个条件
+    if _get_hit_count(res) == 0:
         s = create_es_search('paper').query(
-            Q('bool', should=keyword_queries, minimum_should_match=1,
+            Q('bool', should=all_queries, minimum_should_match=1,
               must_not=[Q('term', **{'关联专利号': patid})])
         )
         res = run_es_query(s)
