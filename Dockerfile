@@ -62,6 +62,8 @@ COPY pat-evaluation-backend/ .
 
 # ---- 数据导入脚本 ----
 COPY docker/import_excel.py /app/import_excel.py
+COPY docker/import_papers.py /app/import_papers.py
+COPY docker/import_trades.py /app/import_trades.py
 
 # ---- 前端静态文件 ----
 COPY --from=frontend-build /build/dist /usr/share/nginx/html

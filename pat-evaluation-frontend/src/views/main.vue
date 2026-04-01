@@ -25,6 +25,24 @@
         </div>
       </div>
 
+      <div class="card" v-if="tradeRecords.length">
+        <div class="card-header">
+          <span class="card-header__indicator" style="background:var(--md-tertiary)"></span>
+          <span class="card-header__title">交易记录</span>
+        </div>
+        <el-table :data="tradeRecords" style="width:100%" :header-cell-style="tableHeaderStyle">
+          <el-table-column prop="交易类型" label="类型" width="80" align="center">
+            <template slot-scope="scope">
+              <span class="trade-tag" :class="'trade-tag--' + scope.row.交易类型">{{ scope.row.交易类型 }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column prop="交易日期" label="日期" width="120" />
+          <el-table-column prop="原权利人" label="原权利人" min-width="200" />
+          <el-table-column prop="新权利人" label="新权利人/被许可人" min-width="200" />
+          <el-table-column prop="法律事件标题" label="事件" min-width="200" />
+        </el-table>
+      </div>
+
       <div class="action-row">
         <button class="md3-btn md3-btn--tonal" :disabled="navDisabled" @click="navigateTo('/smart-search')">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="18" height="18"><path d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
@@ -56,7 +74,10 @@ let GET_BASIC_INFO_URI = "/api/basicinfo/get_patent_info";
 
 export default {
   data() {
-    return { patentTitle: null, patMetaData: [], dialogVisible: false, navDisabled: false };
+    return { patentTitle: null, patMetaData: [], tradeRecords: [], dialogVisible: false, navDisabled: false };
+  },
+  computed: {
+    tableHeaderStyle() { return { background: 'var(--md-surface-container)', color: 'var(--md-on-surface-variant)', fontWeight: '600', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.06em' } }
   },
   mounted() {
     let targetPatentId = this.$route.query.patentId;
@@ -65,7 +86,7 @@ export default {
     axios.get(GET_BASIC_INFO_URI + "?patid=" + patentId).then((response) => {
       let d = response["data"];
       this.patentTitle = d["专利名"];
-      let fieldOrder = ['申请号','专利名','主分类号','IPC分类号','申请人','当前权利人','发明人','公开日','公开号','代理机构','代理人','申请日','申请人地址','优先权','国省代码','摘要','主权项','引用专利','引用文献','法律状态','专利类型','转化收益（万元）'];
+      let fieldOrder = ['申请号','专利名','主分类号','IPC分类号','申请人','当前权利人','发明人','公开日','公开号','代理机构','代理人','申请日','申请人地址','优先权','国省代码','摘要','主权项','引用专利','引用文献','法律状态','专利类型'];
       let pData = [];
       for (const key of fieldOrder) {
         let value = d[key];
@@ -73,7 +94,18 @@ export default {
         else if (Array.isArray(value)) value = value.join('，');
         pData.push({ key: key, value: value });
       }
+      // 转化收益智能展示
+      if (d.has_traded) {
+        pData.push({ key: '实际转化收益', value: d['转化收益（万元）'] + ' 万元' });
+      } else {
+        pData.push({ key: '转化收益', value: '暂无公开交易记录' });
+      }
+      // 评估价格区间
+      if (d.estimated_price && Array.isArray(d.estimated_price) && d.estimated_price.length >= 2) {
+        pData.push({ key: '评估价格区间', value: parseFloat(d.estimated_price[0]).toFixed(2) + ' ~ ' + parseFloat(d.estimated_price[1]).toFixed(2) + ' 万元（基于模型估算）' });
+      }
       this.patMetaData = pData;
+      this.tradeRecords = d.trade_records || [];
       this.$store.commit("setPatentTitle", this.patentTitle);
     }).catch((error) => {
       if (error.response && error.response.status === 404) { this.dialogVisible = true; this.navDisabled = true; }
@@ -131,4 +163,9 @@ export default {
 .md3-btn--tonal:hover:not(:disabled) { box-shadow: var(--elevation-1); }
 .md3-btn--outlined { background: transparent; color: var(--md-primary); border: 1px solid var(--md-outline); }
 .md3-btn--outlined:hover:not(:disabled) { background: var(--sci-accent-light); }
+
+.trade-tag { display: inline-block; font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: var(--radius-full); }
+.trade-tag--转让 { color: var(--md-error); background: var(--md-error-container); }
+.trade-tag--许可 { color: var(--md-primary); background: var(--md-primary-container); }
+.trade-tag--质押 { color: var(--md-warning); background: var(--md-warning-container); }
 </style>

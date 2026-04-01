@@ -6,7 +6,10 @@ from flask import Blueprint, jsonify, current_app as app
 from .combinationfactor import get_company_patents
 from .marketfactor import create_field_query, get_field_patents, estimateprice
 from .techfactor import thesisbyapplicant, applicability
-from .utils import get_patent, parse_args, create_es_search, run_es_query, put_es_document, resp_as_json
+from .utils import (get_patent, parse_args, create_es_search, run_es_query,
+                    put_es_document, resp_as_json, parse_date,
+                    PATENT_TYPE_MAX_YEARS, DEFAULT_MAX_YEARS)
+from .lawfactor import parse_priority
 from .algorithms import compute_price
 from math import sqrt
 import numpy as np
@@ -277,17 +280,43 @@ def evl_lawfactor(patid):
 
 
 def __get_valid_years(patid):
-    return 5
+    """根据专利类型和申请日计算剩余有效期（年）"""
+    try:
+        patent = get_patent(patid)
+        if patent is None:
+            return 0
+        source = patent.get('_source', {})
+        legal_status = source.get('法律状态', '')
+        if '失效' in legal_status:
+            return 0
+
+        apply_date_str = source.get('申请日', '')
+        patent_type = source.get('专利类型', '发明')
+        max_years = PATENT_TYPE_MAX_YEARS.get(patent_type, DEFAULT_MAX_YEARS)
+
+        from_date = parse_date(apply_date_str)
+        if not from_date:
+            return 0
+
+        elapsed = (datetime.datetime.now() - from_date).days / 365.25
+        remaining = max(0, max_years - elapsed)
+        return remaining
+    except Exception as e:
+        app.logger.warning(f"__get_valid_years error for {patid}: {e}")
+        return 0
 
 
 def __get_mul_country_application(patid):
-    return [{
-        "country": "US",
-        "status": "approved"
-    }, {
-        "country": "CN",
-        "status": "applied"
-    }]
+    """从优先权字段解析多国申请情况"""
+    try:
+        patent = get_patent(patid)
+        if patent is None:
+            return [{'country': 'CN', 'status': 'applied'}]
+        priority = patent.get('_source', {}).get('优先权', '')
+        return parse_priority(priority)
+    except Exception as e:
+        app.logger.warning(f"__get_mul_country_application error for {patid}: {e}")
+        return [{'country': 'CN', 'status': 'applied'}]
 
 
 def eval_marketfactor(patid):

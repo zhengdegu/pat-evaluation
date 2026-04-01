@@ -41,7 +41,7 @@ curl -s -X PUT "http://127.0.0.1:9200/patent_new2" -H 'Content-Type: application
         "公开号":       { "type": "keyword" },
         "代理机构":     { "type": "text" },
         "代理人":       { "type": "text" },
-        "申请日":       { "type": "keyword" },
+        "申请日":       { "type": "date", "format": "yyyyMMdd||yyyy-MM-dd||epoch_millis", "ignore_malformed": true },
         "申请人地址":   { "type": "text" },
         "优先权":       { "type": "text" },
         "国省代码":     { "type": "keyword" },
@@ -82,13 +82,20 @@ curl -s -X PUT "http://127.0.0.1:9200/paper_data" -H 'Content-Type: application/
 {
   "settings": { "number_of_shards": 1, "number_of_replicas": 0 },
   "mappings": {
-    "default": {
+    "content": {
       "properties": {
         "论文名称":   { "type": "text", "analyzer": "ik_max_word", "search_analyzer": "ik_smart" },
         "作者":       { "type": "text", "analyzer": "ik_smart" },
         "摘要":       { "type": "text", "analyzer": "ik_max_word", "search_analyzer": "ik_smart" },
+        "发表年份":   { "type": "keyword" },
         "被引用次数": { "type": "integer" },
-        "发表日期":   { "type": "keyword" }
+        "期刊":       { "type": "text", "analyzer": "ik_smart" },
+        "DOI":        { "type": "keyword" },
+        "PMID":       { "type": "keyword" },
+        "数据来源":   { "type": "keyword" },
+        "关联专利号": { "type": "keyword" },
+        "关联发明人": { "type": "text", "analyzer": "ik_smart" },
+        "关联申请人": { "type": "text", "analyzer": "ik_smart" }
       }
     }
   }
@@ -111,6 +118,32 @@ curl -s -X PUT "http://127.0.0.1:9200/evaluation" -H 'Content-Type: application/
         "tech_point":     { "type": "float" },
         "price":          { "type": "float" },
         "valid":          { "type": "boolean" }
+      }
+    }
+  }
+}'
+echo ""
+
+# 创建 patent_trade 索引
+echo "创建 patent_trade 索引..."
+curl -s -X PUT "http://127.0.0.1:9200/patent_trade" -H 'Content-Type: application/json' -d '
+{
+  "settings": { "number_of_shards": 1, "number_of_replicas": 0 },
+  "mappings": {
+    "content": {
+      "properties": {
+        "专利号":       { "type": "keyword" },
+        "公开号":       { "type": "keyword" },
+        "交易类型":     { "type": "keyword" },
+        "交易日期":     { "type": "date", "format": "yyyy-MM-dd||yyyyMMdd||epoch_millis", "ignore_malformed": true },
+        "交易金额":     { "type": "float" },
+        "原权利人":     { "type": "text", "analyzer": "ik_smart", "fields": { "keyword": { "type": "keyword" } } },
+        "新权利人":     { "type": "text", "analyzer": "ik_smart", "fields": { "keyword": { "type": "keyword" } } },
+        "许可类型":     { "type": "keyword" },
+        "数据来源":     { "type": "keyword" },
+        "法律事件代码": { "type": "keyword" },
+        "法律事件标题": { "type": "text" },
+        "原始描述":     { "type": "text" }
       }
     }
   }

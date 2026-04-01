@@ -12,7 +12,7 @@
         <span class="price-value">{{ patEvalue[1] }}</span>
         <span class="price-unit">万元</span>
       </div>
-      <p class="price-note">基于多维度因素综合评估得出的价格区间</p>
+      <p class="price-note">基于多维度因素综合评估得出的价格区间（尚无真实交易数据，仅供参考）</p>
     </div>
 
     <div class="radar-card card">

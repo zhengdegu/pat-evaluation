@@ -170,19 +170,51 @@ def create_field_query(patent, start=None, size=None, aggs=False) -> Search:
     return s
 
 
+def create_field_query_no_trade_filter(patent, start=None, size=None, aggs=False):
+    """同 IPC 分类号查询，不过滤转化收益（用于申请趋势统计）"""
+    if patent is None:
+        return None
+    classid = patent.get('_source', {}).get('IPC分类号', [])
+    if not classid:
+        return None
+    q = Q('bool', should=[Q('match', IPC分类号=c) for c in classid])
+    s = create_es_search('patent').query(q)
+    if start is not None:
+        s = s[start:start + size]
+    if aggs:
+        s.aggs.bucket('apply_per_year', 'date_histogram', field='申请日', interval='year') \
+            .metric('trade_per_year', 'sum', field='转化收益（万元）')
+    return s
+
+
 @market_bp.route('/applytrending')
 def applytrending():
     args, _ = parse_args(['patid'])
-
-    res = get_field_patents(args['patid'], aggs=True)
-    return jsonify(**res['aggregations'], error_code='success')
+    patent = get_patent(args['patid'])
+    if patent is None:
+        return jsonify(apply_per_year={'buckets': []}, error_code='no_data')
+    # 申请趋势不过滤转化收益
+    s = create_field_query_no_trade_filter(patent, aggs=True)
+    if s is None:
+        return jsonify(apply_per_year={'buckets': []}, error_code='no_data')
+    res = run_es_query(s)
+    if res is None:
+        return jsonify(apply_per_year={'buckets': []}, error_code='no_data')
+    try:
+        return jsonify(**res.to_dict()['aggregations'], error_code='success')
+    except Exception as e:
+        app.logger.error(f"applytrending aggregation error: {e}")
+        return jsonify(apply_per_year={'buckets': []}, error_code='agg_error')
 
 
 @market_bp.route('/tradetrending')
 def tradetrending():
     args, _ = parse_args(['patid'])
     res = get_field_patents(args['patid'], aggs=True)
-    return jsonify(**res['aggregations'], error_code='success')
+    aggs = res.get('aggregations', {})
+    if not aggs:
+        return jsonify(apply_per_year={'buckets': []}, error_code='no_data')
+    return jsonify(**aggs, error_code='success')
 
 
 @market_bp.route('/similarpatents')
@@ -191,80 +223,59 @@ def similarpatents():
     patid = args['patid']
     start = optargs.get('start', 0)
     size = optargs.get('size', 10)
-    
+
     try:
-        # 获取目标专利信息
         target = get_patent(patid)
-        target_patent_name = target['_source'].get('专利名', '')
-        
-        if not target_patent_name:
-            return jsonify({"error": "专利名不存在", "error_code": "invalid_patent"}), 400
-        
-        # 使用ES的模糊匹配查询，根据专利名搜索
-        from elasticsearch_dsl import Q
-        
-        # 构建查询：主要根据专利名进行模糊匹配，排除当前专利
-        # 使用multi_match在专利名字段进行模糊搜索
+        if target is None:
+            return jsonify(hits=[], total=0, error_code='patent_not_found')
+
+        target_source = target['_source']
+        target_abstract = target_source.get('摘要', '')
+        target_ipc = target_source.get('IPC分类号', [])
+
+        if not target_ipc:
+            return jsonify(hits=[], total=0, error_code='no_ipc')
+
+        # 用 IPC 分类号前4位做同领域匹配（如 C12N → 微生物/基因工程）
+        ipc_prefixes = list(set(ipc[:4] for ipc in target_ipc if len(ipc) >= 4))
+        should_clauses = [Q('prefix', IPC分类号=p) for p in ipc_prefixes]
+
+        # 多取一些候选，后面用摘要相似度重排序
+        fetch_size = max(size * 5, 50)
         s = create_es_search('patent').query(
             Q('bool',
-              must=[
-                  Q('multi_match',
-                    query=target_patent_name,
-                    fields=['专利名^3'],
-                    type='best_fields',
-                    fuzziness='AUTO')
-              ],
-              must_not=[
-                  Q('match_phrase', 申请号=patid)  # 排除当前专利
-              ])
-        )
-        
-        # 设置分页
-        s = s[start:start + size]
-        
-        # 执行查询
+              should=should_clauses,
+              minimum_should_match=1,
+              must_not=[Q('match_phrase', 申请号=patid)])
+        )[0:fetch_size]
+
         res = run_es_query(s)
-        
         if res is None:
-            return jsonify({"hits": {"total": 0, "hits": []}, "error_code": "no_results"})
-        
-        # 转换为字典格式
+            return jsonify(hits=[], total=0, error_code='no_results')
+
         result_dict = res.to_dict()
-        
-        # 计算相似度并添加到结果中
-        for hit in result_dict['hits']['hits']:
-            # 使用摘要计算相似度
+        hits = result_dict.get('hits', {}).get('hits', [])
+
+        # 用摘要 TF-IDF 余弦相似度重排序
+        for hit in hits:
             source_abstract = hit['_source'].get('摘要', '')
-            target_abstract = target['_source'].get('摘要', '')
-            
             if source_abstract and target_abstract:
-                similarity = compute_similarity(target_abstract, source_abstract)
+                hit['similarity'] = compute_similarity(target_abstract, source_abstract)
             else:
-                # 如果摘要不存在，使用专利名的简单匹配度
-                source_name = hit['_source'].get('专利名', '')
-                if source_name and target_patent_name:
-                    # 简单的字符串相似度
-                    from difflib import SequenceMatcher
-                    similarity = SequenceMatcher(None, target_patent_name, source_name).ratio()
-                else:
-                    similarity = 0.0
-            
-            hit['similarity'] = similarity
-        
-        # 按相似度排序
-        result_dict['hits']['hits'] = sorted(
-            result_dict['hits']['hits'],
-            key=lambda x: x.get('similarity', 0),
-            reverse=True
-        )
-        
-        return jsonify(**result_dict['hits'], error_code='success')
-        
+                hit['similarity'] = 0.0
+
+        # 按相似度降序排序，取分页范围
+        hits.sort(key=lambda x: x.get('similarity', 0), reverse=True)
+        total = len(hits)
+        paged_hits = hits[start:start + size]
+
+        return jsonify(hits=paged_hits, total=total, error_code='success')
+
     except Exception as e:
         app.logger.error(f"Error in similarpatents: {e}")
         import traceback
         app.logger.error(traceback.format_exc())
-        return jsonify({"error": str(e), "error_code": "internal_error"}), 500
+        return jsonify(hits=[], total=0, error_code='internal_error')
 
 
 @market_bp.route('/estimateprice')

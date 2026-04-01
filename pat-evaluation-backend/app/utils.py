@@ -1,8 +1,32 @@
 import json
+from datetime import datetime, timedelta
 from elasticsearch import Elasticsearch, NotFoundError
 from elasticsearch_dsl import Search, Document
 from flask import g, current_app as app, abort, jsonify, request
 import requests
+
+
+# 专利类型 → 最大有效期（年）
+PATENT_TYPE_MAX_YEARS = {
+    '发明': 20,
+    '发明专利': 20,
+    '实用新型': 10,
+    '外观设计': 15,
+}
+DEFAULT_MAX_YEARS = 20
+
+
+def parse_date(date_str):
+    """解析多种日期格式，返回 datetime 或 None"""
+    if not date_str:
+        return None
+    date_str = str(date_str).strip()
+    for fmt in ('%Y%m%d', '%Y-%m-%d', '%Y/%m/%d'):
+        try:
+            return datetime.strptime(date_str, fmt)
+        except ValueError:
+            continue
+    return None
 
 
 def get_index_name(i) -> str:
@@ -10,7 +34,8 @@ def get_index_name(i) -> str:
         "patent": "patent_new2",
         "wenshu": "wenshu",
         "paper": "paper_data",
-        "evaluation": "evaluation"
+        "evaluation": "evaluation",
+        "trade": "patent_trade"
     }
 
     return index_map[i]

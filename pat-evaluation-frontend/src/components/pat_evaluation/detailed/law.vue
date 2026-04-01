@@ -32,12 +32,11 @@ import axios from "axios";
 let GET_VALID_DATE_URL = "/api/lawfactor/validityperiod";
 let MULTIPLE_APPLY_URL = '/api/lawfactor/multipleapplications';
 let LAW_SUITE_URL = "/api/lawfactor/lawsuits";
-let PAT_VALID_DATE_CN = 25;
-
 export default {
   data() {
     return {
-      validityperiod: 0, appliedCountry: {}, lawSuites: [],
+      validityperiod: 0, validityText: '', validityStatus: 'valid',
+      appliedCountry: {}, lawSuites: [],
       countries: [
         { code: 'us', key: 'US', name: '美国' }, { code: 'gb', key: 'GB', name: '英国' },
         { code: 'fr', key: 'FR', name: '法国' }, { code: 'de', key: 'DE', name: '德国' },
@@ -56,16 +55,35 @@ export default {
     let patentId = this.$store.state.patentId;
     if (patentId !== null) {
       axios.get(GET_VALID_DATE_URL + "?patid=" + patentId).then((response) => {
-        let fromDate = response.data.validity.from; let status = response.data.validity.status;
-        if (status === 'valid') {
-          fromDate = new Date(Date.parse(fromDate)); let now = new Date(Date.now());
-          let validLeft = PAT_VALID_DATE_CN - (now.getFullYear() - fromDate.getFullYear());
-          this.validityperiod = validLeft / PAT_VALID_DATE_CN * 100;
-          this.$nextTick(() => {
-            let el = document.getElementById("validityperiod");
-            if (el) { let textEl = el.getElementsByClassName("el-progress-bar__innerText")[0]; if (textEl) textEl.textContent = "有效期剩余 " + validLeft + " 年"; }
-          });
+        let v = response.data.validity;
+        let fromDate = v.from;
+        let status = v.status;
+        let maxYears = v.max_years || 20;
+        let patentType = v.patent_type || '发明';
+        this.validityStatus = status;
+
+        if (status === 'invalid') {
+          this.validityperiod = 0;
+          this.validityText = '已失效（' + patentType + '，最长 ' + maxYears + ' 年）';
+        } else if (fromDate) {
+          let fd = new Date(Date.parse(fromDate));
+          let now = new Date(Date.now());
+          let elapsed = (now.getFullYear() - fd.getFullYear());
+          let validLeft = Math.max(0, maxYears - elapsed);
+          this.validityperiod = Math.round(validLeft / maxYears * 100);
+          this.validityText = '有效期剩余 ' + validLeft + ' 年 / 共 ' + maxYears + ' 年（' + patentType + '）';
+        } else {
+          this.validityperiod = 0;
+          this.validityText = '申请日未知，无法计算有效期';
         }
+
+        this.$nextTick(() => {
+          let el = document.getElementById("validityperiod");
+          if (el) {
+            let textEl = el.getElementsByClassName("el-progress-bar__innerText")[0];
+            if (textEl) textEl.textContent = this.validityText;
+          }
+        });
       }).catch((e) => console.log(e));
       axios.get(MULTIPLE_APPLY_URL + "?patid=" + patentId).then((response) => {
         let countries = {}; for (const i of response.data.applications) countries[i.country] = i.status;
