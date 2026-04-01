@@ -34,16 +34,23 @@ def thesisbyapplicant():
     patent_abstract = patent.get('_source', {}).get('摘要', '')
     patid = args['patid']
     
-    # 优先用关联专利号查询（论文数据中有关联专利号字段）
+    # 优先用关联专利号查询（论文数据中有关联专利号字段，keyword类型用term精确匹配）
     s = create_es_search('paper').query(
         Q('bool', should=[
-            Q('match_phrase', **{'关联专利号': patid}),
+            Q('term', **{'关联专利号': patid}),
         ], minimum_should_match=1)
     )
     res = run_es_query(s)
 
     # 如果关联专利号没查到，再用发明人姓名查
-    if res is None or res.to_dict()['hits']['total'] == 0:
+    found_total = 0
+    if res is not None:
+        try:
+            found_total = res.to_dict()['hits']['total']
+        except Exception:
+            found_total = 0
+
+    if found_total == 0:
         inventors = patent.get('_source', {}).get('发明人', '')
         if not inventors:
             return jsonify(thesis={'hits': {'total': 0, 'hits': []}}, error_code='no_inventors')
@@ -110,7 +117,7 @@ def similarthesis():
     # 排除已关联到该专利的论文（避免和 thesisbyapplicant 重复）
     s = create_es_search('paper').query(
         Q('bool', should=queries, minimum_should_match=1,
-          must_not=[Q('match_phrase', **{'关联专利号': patid})])
+          must_not=[Q('term', **{'关联专利号': patid})])
     )
     res = run_es_query(s)
 
